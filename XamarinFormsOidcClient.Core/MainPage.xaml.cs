@@ -22,6 +22,12 @@ namespace XamarinFormsOidcClient.Core
 
         Lazy<HttpClient> _apiClient = new Lazy<HttpClient>(() => new HttpClient());
 
+        //private string _authority = "https://demo.identityserver.io";
+        //private string _api = "https://demo.identityserver.io";
+        //private string _authority = "http://localhost:5000";
+        private string _authority = "http://10.0.2.2:5000";
+        private string _api = "http://10.0.2.2:5001";
+
         public MainPage()
         {
             InitializeComponent();
@@ -47,7 +53,7 @@ namespace XamarinFormsOidcClient.Core
 
             var options = new OidcClientOptions
             {
-                Authority = "http://localhost:5000",
+                Authority = _authority,
                 ClientId = "native.hybrid",
                 ClientSecret = "secret",
                 Scope = "openid profile email web_api offline_access",
@@ -62,9 +68,9 @@ namespace XamarinFormsOidcClient.Core
 
         private async void OpenIDConfiguration_Clicked(object sender, EventArgs e)
         {
+            //// Cannot use http in _authority
             //var client = new HttpClient();
-            ////var disco = await GetDisco(client, "http://localhost:5000");
-            //var disco = await GetDisco(client, "https://demo.identityserver.io");
+            //var disco = await GetDisco(client, _authority);
             //if (disco.IsError)
             //{
             //    OutputText.Text = disco.Error;
@@ -77,13 +83,13 @@ namespace XamarinFormsOidcClient.Core
 
             var client = new HttpClient();
 
-            client.BaseAddress = new Uri("http://localhost:5000");
-            //client.BaseAddress = new Uri("https://demo.identityserver.io");
+            client.BaseAddress = new Uri(_authority);
             try
             {
                 HttpResponseMessage result = null;
                 result = await client.GetAsync(".well-known/openid-configuration");
-                OutputText.Text = JArray.Parse(await result.Content.ReadAsStringAsync()).ToString();
+                //OutputText.Text = JArray.Parse(await result.Content.ReadAsStringAsync()).ToString();
+                OutputText.Text = await result.Content.ReadAsStringAsync();
             }
             catch (Exception ex)
             {
@@ -103,7 +109,7 @@ namespace XamarinFormsOidcClient.Core
         private async void AuthorizeCallApi_Clicked(object sender, EventArgs e)
         {
             var client = new HttpClient();
-            var disco = await GetDisco(client, "http://localhost:5000");
+            var disco = await GetDisco(client, _authority);
             if (disco.IsError)
             {
                 OutputText.Text = disco.Error;
@@ -162,8 +168,7 @@ namespace XamarinFormsOidcClient.Core
             OutputText.Text = sb.ToString();
 
             _apiClient.Value.SetBearerToken(_result?.AccessToken ?? "");
-            //_apiClient.Value.BaseAddress = new Uri("https://demo.identityserver.io/");
-            _apiClient.Value.BaseAddress = new Uri("http://localhost:5001");
+            _apiClient.Value.BaseAddress = new Uri(_api);
 
         }
 
@@ -198,7 +203,7 @@ namespace XamarinFormsOidcClient.Core
             {
                 var apiClient = new HttpClient();
                 //apiClient.Value.SetBearerToken(_result?.AccessToken ?? "");
-                apiClient.BaseAddress = new Uri("http://localhost:5001");
+                apiClient.BaseAddress = new Uri(_api);
                 result = await apiClient.GetAsync("weatherforecast");
             }
             catch (Exception ex)

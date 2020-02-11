@@ -47,7 +47,7 @@
   <ItemGroup>
     <Reference Include="Mono.Android" />
     <Reference Include="Plugin.CurrentActivity">
-      <HintPath>..\CurrentActivityPlugin\src\Plugin.CurrentActivity.Android\bin\Debug\monoandroid90\Plugin.CurrentActivity.dll</HintPath>
+      <HintPath>..\..\CurrentActivityPlugin\src\Plugin.CurrentActivity.Android\bin\Debug\monoandroid90\Plugin.CurrentActivity.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

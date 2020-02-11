@@ -14,8 +14,8 @@ using Plugin.CurrentActivity;
 namespace XamarinFormsOidcClient.Droid
 {
     //You can specify additional application information in this attribute
-    [Application(AllowClearUserData = true)]
-    //[Application]
+    //[Application(AllowClearUserData = true)]
+    [Application]
     public class MainApplication : Application, Application.IActivityLifecycleCallbacks
     {
         public MainApplication(IntPtr handle, JniHandleOwnership transer)
