@@ -22,11 +22,11 @@ namespace XamarinFormsOidcClient.Core
 
         Lazy<HttpClient> _apiClient = new Lazy<HttpClient>(() => new HttpClient());
 
-        //private string _authority = "https://demo.identityserver.io";
-        //private string _api = "https://demo.identityserver.io";
+        private string _authority = "https://demo.identityserver.io";
+        private string _api = "https://demo.identityserver.io/";
         //private string _authority = "http://localhost:5000";
-        private string _authority = "http://10.0.2.2:5000";
-        private string _api = "http://10.0.2.2:5001";
+        //private string _authority = "http://10.0.2.2:5000";
+        //private string _api = "http://10.0.2.2:5001/";
 
         public MainPage()
         {
@@ -56,11 +56,14 @@ namespace XamarinFormsOidcClient.Core
                 Authority = _authority,
                 ClientId = "native.hybrid",
                 ClientSecret = "secret",
-                Scope = "openid profile email web_api offline_access",
+                //Scope = "openid profile email web_api offline_access",
+                Scope = "openid profile email api offline_access",
                 RedirectUri = "xamarinformsclients://callback",
                 Browser = browser,
 
-                ResponseMode = OidcClientOptions.AuthorizeResponseMode.Redirect
+                ResponseMode = OidcClientOptions.AuthorizeResponseMode.Redirect,
+
+                Flow = OidcClientOptions.AuthenticationFlow.Hybrid
             };
 
             _client = new OidcClient(options);
@@ -177,8 +180,8 @@ namespace XamarinFormsOidcClient.Core
             HttpResponseMessage result = null;
             try
             {
-                //result = await _apiClient.Value.GetAsync("api/test");
-                result = await _apiClient.Value.GetAsync("identity");
+                result = await _apiClient.Value.GetAsync("api/test");
+                //result = await _apiClient.Value.GetAsync("identity");
             }
             catch (Exception ex)
             {
