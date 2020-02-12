@@ -8,6 +8,7 @@ using Android.Widget;
 using Android.OS;
 using Xamarin.Forms;
 using XamarinFormsOidcClient.Core;
+using System.Net;
 
 namespace XamarinFormsOidcClient.Droid
 {
@@ -40,6 +41,10 @@ namespace XamarinFormsOidcClient.Droid
             ToolbarResource = Resource.Layout.Toolbar;
 
             base.OnCreate(bundle);
+
+//#if DEBUG
+//            ServicePointManager.ServerCertificateValidationCallback += (o, cert, chain, sslPolicyErrors) => true;
+//#endif
 
             global::Xamarin.Forms.Forms.Init(this, bundle);
             LoadApplication(new App());

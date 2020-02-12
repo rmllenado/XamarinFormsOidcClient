@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,17 +21,44 @@ namespace XamarinFormsOidcClient.Core
         OidcClient _client;
         LoginResult _result;
 
-        Lazy<HttpClient> _apiClient = new Lazy<HttpClient>(() => new HttpClient());
+        Lazy<HttpClient> _apiClient;
 
-        private string _authority = "https://demo.identityserver.io";
-        private string _api = "https://demo.identityserver.io/";
-        //private string _authority = "http://localhost:5000";
-        //private string _authority = "http://10.0.2.2:5000";
-        //private string _api = "http://10.0.2.2:5001/";
+        private string _authority;
+        private string _api;
+        private HttpClientHandler _handler;
 
         public MainPage()
         {
             InitializeComponent();
+
+#if DEBUG
+            ServicePointManager.ServerCertificateValidationCallback += (o, cert, chain, sslPolicyErrors) => true;
+#endif
+
+            _handler = new System.Net.Http.HttpClientHandler();
+            _apiClient = new Lazy<HttpClient>(() => new HttpClient(_handler));
+
+            var useLocalIdentityServer = true;
+            var useSecureLocal = true;
+
+            if (useLocalIdentityServer)
+            {
+                if (useSecureLocal)
+                {
+                    _authority = "https://10.0.2.2:5000";
+                    _api = "https://10.0.2.2:5001/";
+                }
+                else
+                {
+                    _authority = "http://10.0.2.2:5000";
+                    _api = "http://10.0.2.2:5001/";
+                }
+            }
+            else
+            {
+                _authority = "https://demo.identityserver.io";
+                _api = "https://demo.identityserver.io/";
+            }
 
             CallApiWeatherforecast.Clicked += CallApiWeatherforecast_Clicked;
             OpenIDConfiguration.Clicked += OpenIDConfiguration_Clicked;
@@ -84,7 +112,7 @@ namespace XamarinFormsOidcClient.Core
             //    //OutputText.Text = JArray.FromObject(disco).ToString();
             //}
 
-            var client = new HttpClient();
+            var client = new HttpClient(_handler);
 
             client.BaseAddress = new Uri(_authority);
             try
@@ -111,7 +139,7 @@ namespace XamarinFormsOidcClient.Core
 
         private async void AuthorizeCallApi_Clicked(object sender, EventArgs e)
         {
-            var client = new HttpClient();
+            var client = new HttpClient(_handler);
             var disco = await GetDisco(client, _authority);
             if (disco.IsError)
             {
@@ -204,7 +232,7 @@ namespace XamarinFormsOidcClient.Core
             HttpResponseMessage result = null;
             try
             {
-                var apiClient = new HttpClient();
+                var apiClient = new HttpClient(_handler);
                 //apiClient.Value.SetBearerToken(_result?.AccessToken ?? "");
                 apiClient.BaseAddress = new Uri(_api);
                 result = await apiClient.GetAsync("weatherforecast");
