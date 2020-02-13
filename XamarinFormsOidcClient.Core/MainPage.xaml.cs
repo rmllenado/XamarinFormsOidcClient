@@ -2,6 +2,7 @@
 using IdentityModel.OidcClient;
 using IdentityModel.OidcClient.Browser;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,6 +16,17 @@ using Xamarin.Forms.Xaml;
 
 namespace XamarinFormsOidcClient.Core
 {
+
+#if DEBUG
+    internal class CustomHttphandler : HttpClientHandler
+    {
+        public CustomHttphandler() : base()
+        {
+            ServerCertificateCustomValidationCallback = (message, certificate, chain, sslPolicyErrors) => true;
+        }
+    }
+#endif
+
     //[XamlCompilation(XamlCompilationOptions.Compile)]
     public partial class MainPage : ContentPage
     {
@@ -22,92 +34,160 @@ namespace XamarinFormsOidcClient.Core
         private static LoginResult _result;
 
         private static Lazy<HttpClient> _apiClient = null;
+        private static HttpClientHandler _handler = null;
+        private static string _callbackOutput = null;
 
         private string _authority;
+        private string _apiBaseAddress;
         private string _api;
-        private HttpClientHandler _handler = null;
+
+        Dictionary<string, string> _stsList = new Dictionary<string, string>
+        {
+            { "Local STS (localhost:5000)", "https://10.0.2.2:5000,https://10.0.2.2:5001/,identity" },
+            { "demo.identityserver.io", "https://demo.identityserver.io,https://demo.identityserver.io/,api/test" }
+        };
 
         public MainPage()
         {
             InitializeComponent();
 
-            _handler = _handler ?? new System.Net.Http.HttpClientHandler();
-            _apiClient = _apiClient ?? new Lazy<HttpClient>(() => new HttpClient(_handler));
-
-            var useLocalIdentityServer = false;
-            var useSecureLocal = true;
-
-            if (useLocalIdentityServer)
-            {
-                if (useSecureLocal)
-                {
-                    _authority = "https://10.0.2.2:5000";
-                    _api = "https://10.0.2.2:5001/";
-                }
-                else
-                {
-                    _authority = "http://10.0.2.2:5000";
-                    _api = "http://10.0.2.2:5001/";
-                }
-            }
-            else
-            {
-                _authority = "https://demo.identityserver.io";
-                _api = "https://demo.identityserver.io/";
-            }
-
-            CallApiWeatherforecast.Clicked += CallApiWeatherforecast_Clicked;
-            OpenIDConfiguration.Clicked += OpenIDConfiguration_Clicked;
+            ViewDisco.Clicked += ViewDisco_Clicked;
+            ViewOpenIDConfiguration.Clicked += ViewOpenIDConfiguration_Clicked;
             AuthorizeCallApi.Clicked += AuthorizeCallApi_Clicked;
             Login.Clicked += Login_Clicked;
             CallApi.Clicked += CallApi_Clicked;
 
-            var browser = DependencyService.Get<IBrowser>();
-
-            //var options = new OidcClientOptions
-            //{
-            //    Authority = "https://demo.identityserver.io",
-            //    ClientId = "native.hybrid",
-            //    Scope = "openid profile email api offline_access",
-            //    RedirectUri = "xamarinformsclients://callback",
-            //    Browser = browser,
-
-            //    ResponseMode = OidcClientOptions.AuthorizeResponseMode.Redirect
-            //};
-
-            var options = new OidcClientOptions
+            if (_callbackOutput != null)
             {
-                Authority = _authority,
-                ClientId = "native.hybrid",
-                ClientSecret = "secret",
-                //Scope = "openid profile email web_api offline_access",
-                Scope = "openid profile email api offline_access",
-                RedirectUri = "xamarinformsclients://callback",
-                Browser = browser,
+                DisplayOutput(_callbackOutput);
+                _callbackOutput = null;
+            }
 
-                ResponseMode = OidcClientOptions.AuthorizeResponseMode.Redirect,
+            foreach (var sts in _stsList.Keys)
+            {
+                StsPicker.Items.Add(sts);
+            }
 
-                Flow = OidcClientOptions.AuthenticationFlow.Hybrid
+#if DEBUG
+            // dev env setup - handle/bypass certificate errors
+            //DependencyService.Register<CustomHttphandler>();
+            //_handler = DependencyService.Resolve<CustomHttphandler>();
+            _handler = new CustomHttphandler();
+#endif
+
+            StsPicker.SelectedIndexChanged += (sender, args) =>
+            {
+                if (StsPicker.SelectedIndex >= 0)
+                {
+                    
+                    var selectedItem = StsPicker.SelectedItem.ToString();
+
+                    if (selectedItem == "Local STS (localhost:5000)")
+                    {
+                        CallApiWeatherforecast.Clicked += CallApiWeatherforecast_Clicked;
+                        CallApiWeatherforecast.IsVisible = true;
+                    }
+                    else
+                    {
+                        CallApiWeatherforecast.Clicked -= CallApiWeatherforecast_Clicked;
+                        CallApiWeatherforecast.IsVisible = false;
+                    }
+
+                    var stsAndApi = _stsList[selectedItem].Split(',');
+                    _authority = stsAndApi[0];
+                    _apiBaseAddress = stsAndApi[1];
+                    _api = stsAndApi[2];
+
+                    _handler = _handler ?? new HttpClientHandler();
+
+                    _apiClient = _apiClient ?? new Lazy<HttpClient>(() =>
+                    {
+                        return new HttpClient(_handler);
+                    });
+
+                    var browser = DependencyService.Get<IBrowser>();
+
+                    var options = new OidcClientOptions
+                    {
+                        Authority = _authority,
+                        ClientId = "native.hybrid",
+                        ClientSecret = "secret",
+                        Scope = "openid profile email api offline_access",
+                        RedirectUri = "xamarinformsclients://callback",
+                        Browser = browser,
+
+                        ResponseMode = OidcClientOptions.AuthorizeResponseMode.Redirect,
+
+                        Flow = OidcClientOptions.AuthenticationFlow.Hybrid
+
+#if DEBUG
+                    // dev env setup - handle/bypass certificate errors
+                    ,
+                        BackchannelHandler = _handler
+#endif
+                    };
+
+                    _client = new OidcClient(options);
+                }
             };
 
-            _client = new OidcClient(options);
+            StsPicker.SelectedIndex = 1;
         }
 
-        private async void OpenIDConfiguration_Clicked(object sender, EventArgs e)
+        private void ResetOutput()
         {
-            //// Cannot use http in _authority
-            //var client = new HttpClient();
-            //var disco = await GetDisco(client, _authority);
-            //if (disco.IsError)
-            //{
-            //    OutputText.Text = disco.Error;
-            //}
-            //else
-            //{
-            //    OutputText.Text = Newtonsoft.Json.JsonConvert.SerializeObject(disco);
-            //    //OutputText.Text = JArray.FromObject(disco).ToString();
-            //}
+            OutputText.Text = String.Empty;
+        }
 
+        private void DisplayOutput(object output)
+        {
+            OutputText.Text += BeautifyJson(output) + Environment.NewLine;
+        }
+
+        private string BeautifyJson(object json)
+        {
+            try
+            {
+                if (json?.GetType() == typeof(string))
+                {
+                    //return JArray.Parse(Convert.ToString(json)).ToString(Formatting.Indented);
+
+                    return JObject.Parse(Convert.ToString(json)).ToString(Formatting.Indented);
+                }
+                else if (json != null)
+                {
+                    return JsonConvert.SerializeObject(json, Formatting.Indented);
+                }
+            }
+            catch (Exception ex)
+            {
+                if (json?.GetType() == typeof(string))
+                    return Convert.ToString(json);
+
+                //result = ex.Message + Environment.NewLine + ex.StackTrace.ToString();
+            }
+            return "";
+        }
+
+        private async void ViewDisco_Clicked(object sender, EventArgs e)
+        {
+            ResetOutput();
+            // Cannot use http in _authority
+            var client = new HttpClient(_handler);
+            var disco = await GetDisco(client, _authority);
+            if (disco.IsError)
+            {
+                DisplayOutput(disco.Error);
+            }
+            else
+            {
+                DisplayOutput(disco);
+            }
+        }
+
+        private async void ViewOpenIDConfiguration_Clicked(object sender, EventArgs e)
+        {
+            ResetOutput();
             var client = new HttpClient(_handler);
 
             client.BaseAddress = new Uri(_authority);
@@ -115,16 +195,12 @@ namespace XamarinFormsOidcClient.Core
             {
                 HttpResponseMessage result = null;
                 result = await client.GetAsync(".well-known/openid-configuration");
-                //OutputText.Text = JArray.Parse(await result.Content.ReadAsStringAsync()).ToString();
-                OutputText.Text = await result.Content.ReadAsStringAsync();
+                DisplayOutput(await result.Content.ReadAsStringAsync());
             }
             catch (Exception ex)
             {
-                OutputText.Text = Newtonsoft.Json.JsonConvert.SerializeObject(ex);
-                return;
+                DisplayOutput(ex);
             }
-
-            return;
         }
 
         private async Task<DiscoveryDocumentResponse> GetDisco(HttpClient client, string url)
@@ -135,30 +211,47 @@ namespace XamarinFormsOidcClient.Core
 
         private async void AuthorizeCallApi_Clicked(object sender, EventArgs e)
         {
+            ResetOutput();
+            // discover endpoints from metadata
             var client = new HttpClient(_handler);
             var disco = await GetDisco(client, _authority);
             if (disco.IsError)
             {
-                OutputText.Text = disco.Error;
+                DisplayOutput(disco.Error);
                 return;
             }
 
+            // request token
             var tokenResponse = await client.RequestClientCredentialsTokenAsync(new ClientCredentialsTokenRequest
             {
                 Address = disco.TokenEndpoint,
                 ClientId = "client",
                 ClientSecret = "secret",
 
-                Scope = "web_api"
+                Scope = "api"
             });
 
             if (tokenResponse.IsError)
             {
-                OutputText.Text = tokenResponse.Error;
+                DisplayOutput(tokenResponse.Error);
+                return;
+            }
+
+            DisplayOutput(tokenResponse.Json);
+
+            // call api
+            var apiClient = new HttpClient(_handler);
+            apiClient.BaseAddress = new Uri(_apiBaseAddress);
+            apiClient.SetBearerToken(tokenResponse.AccessToken);
+
+            var response = await apiClient.GetAsync(_api);
+            if (!response.IsSuccessStatusCode)
+            {
+                DisplayOutput(response.StatusCode);
             }
             else
             {
-                OutputText.Text = tokenResponse.Json.ToString();
+                DisplayOutput(await response.Content.ReadAsStringAsync());
             }
 
             return;
@@ -166,20 +259,20 @@ namespace XamarinFormsOidcClient.Core
 
         private async void Login_Clicked(object sender, EventArgs e)
         {
+            ResetOutput();
             try
             {
                 _result = await _client.LoginAsync(new LoginRequest());
             }
             catch (Exception ex)
             {
-                //OutputText.Text = JArray.FromObject(ex).ToString();
-                OutputText.Text = Newtonsoft.Json.JsonConvert.SerializeObject(ex);
+                DisplayOutput(ex);
                 return;
             }
 
             if (_result.IsError)
             {
-                OutputText.Text = _result.Error;
+                DisplayOutput(_result.Error);
                 return;
             }
 
@@ -192,60 +285,62 @@ namespace XamarinFormsOidcClient.Core
             sb.AppendFormat("\n{0}: {1}\n", "refresh token", _result?.RefreshToken ?? "none");
             sb.AppendFormat("\n{0}: {1}\n", "access token", _result.AccessToken);
 
-            OutputText.Text = sb.ToString();
+            // instance state seems to be not statefull
+            // So I'm trying to callback pattern to put the message back
+            //DisplayOutput(sb.ToString());
+
+            _callbackOutput = sb.ToString();
 
             _apiClient.Value.SetBearerToken(_result?.AccessToken ?? "");
-            _apiClient.Value.BaseAddress = new Uri(_api);
+            _apiClient.Value.BaseAddress = new Uri(_apiBaseAddress);
 
         }
 
         private async void CallApi_Clicked(object sender, EventArgs e)
         {
+            ResetOutput();
             HttpResponseMessage result = null;
             try
             {
-                result = await _apiClient.Value.GetAsync("api/test");
-                //result = await _apiClient.Value.GetAsync("identity");
+                result = await _apiClient.Value.GetAsync(_api);
             }
             catch (Exception ex)
             {
-                //OutputText.Text = JArray.FromObject(ex).ToString();
-                OutputText.Text = Newtonsoft.Json.JsonConvert.SerializeObject(ex);
+                DisplayOutput(ex);
             }
 
             if (result != null && result.IsSuccessStatusCode)
             {
-                OutputText.Text = JArray.Parse(await result.Content.ReadAsStringAsync()).ToString();
+                DisplayOutput(await result.Content.ReadAsStringAsync());
             }
             else
             {
-                OutputText.Text = result?.ReasonPhrase;
+                DisplayOutput(result?.ReasonPhrase);
             }
         }
 
         private async void CallApiWeatherforecast_Clicked(object sender, EventArgs e)
         {
+            ResetOutput();
             HttpResponseMessage result = null;
             try
             {
                 var apiClient = new HttpClient(_handler);
-                //apiClient.Value.SetBearerToken(_result?.AccessToken ?? "");
-                apiClient.BaseAddress = new Uri(_api);
+                apiClient.BaseAddress = new Uri(_apiBaseAddress);
                 result = await apiClient.GetAsync("weatherforecast");
             }
             catch (Exception ex)
             {
-                //OutputText.Text = JArray.FromObject(ex).ToString();
-                OutputText.Text = Newtonsoft.Json.JsonConvert.SerializeObject(ex);
+                DisplayOutput(ex);
             }
 
             if (result != null && result.IsSuccessStatusCode)
             {
-                OutputText.Text = JArray.Parse(await result.Content.ReadAsStringAsync()).ToString();
+                DisplayOutput(await result.Content.ReadAsStringAsync());
             }
             else
             {
-                OutputText.Text = result?.ReasonPhrase;
+                DisplayOutput(result?.ReasonPhrase);
             }
         }
     }

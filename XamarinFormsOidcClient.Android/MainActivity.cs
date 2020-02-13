@@ -9,6 +9,7 @@ using Android.OS;
 using Xamarin.Forms;
 using XamarinFormsOidcClient.Core;
 using System.Net;
+using System.Net.Http;
 
 namespace XamarinFormsOidcClient.Droid
 {
@@ -43,7 +44,9 @@ namespace XamarinFormsOidcClient.Droid
             base.OnCreate(bundle);
 
 #if DEBUG
-            ServicePointManager.ServerCertificateValidationCallback += (o, cert, chain, sslPolicyErrors) => true;
+            //https://www.midnightcreative.io/coding/ignore-ssl-certificate-errors-in-xamarin-net-core-servercertificatevalidationcallback-is-not-called-anymore-on-android/
+            //Since the Xamarin.Android version 10 update, the ServicePointManager.ServerCertificateValidationCallback is not called anymore for Xamarin.Android as the team is going towards full compatibility with .NET Core.
+            //ServicePointManager.ServerCertificateValidationCallback += (o, cert, chain, sslPolicyErrors) => true;
 #endif
 
             global::Xamarin.Forms.Forms.Init(this, bundle);

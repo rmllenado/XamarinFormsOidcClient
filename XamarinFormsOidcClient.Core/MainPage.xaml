@@ -7,14 +7,27 @@
              x:Class="XamarinFormsOidcClient.Core.MainPage">
     <ContentPage.Content>
         <StackLayout>
-            <Button Text="Call Api Weatherforecast" x:Name="CallApiWeatherforecast" />
-            <Button Text="OpenIDConfiguration" x:Name="OpenIDConfiguration" />
-            <Button Text="Authorize/Call Api" x:Name="AuthorizeCallApi" />
+            <Label Text="Native OIDC Client"
+                   FontSize="Title"
+                   HorizontalTextAlignment="Center"></Label>
+            <Picker x:Name="StsPicker"
+                    Title="Pick an STS"
+                    HorizontalOptions="CenterAndExpand">
+            </Picker>
+            <Button Text="View Disco" x:Name="ViewDisco" />
+            <Button Text="View OpenID Configuration" x:Name="ViewOpenIDConfiguration" />
+            <Button Text="Call Public Api - Weatherforecast" x:Name="CallApiWeatherforecast" />
+            <Button Text="Authorize and Call Api" x:Name="AuthorizeCallApi" />
             <Button Text="Login" x:Name="Login" />
             <Button Text="Call Api" x:Name="CallApi" />
-            <Label x:Name="OutputText"
-                VerticalOptions="FillAndExpand" 
-                HorizontalOptions="FillAndExpand" />
+            <Label Text="Output"
+                   FontSize="Title"
+                   HorizontalTextAlignment="Center"></Label>
+            <ScrollView Orientation="Vertical">
+                <Label x:Name="OutputText"
+                    VerticalOptions="FillAndExpand" 
+                    HorizontalOptions="FillAndExpand" />
+            </ScrollView>
         </StackLayout>
     </ContentPage.Content>
 </ContentPage>
