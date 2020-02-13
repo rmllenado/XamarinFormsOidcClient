@@ -19,26 +19,22 @@ namespace XamarinFormsOidcClient.Core
     public partial class MainPage : ContentPage
     {
         OidcClient _client;
-        LoginResult _result;
+        private static LoginResult _result;
 
-        Lazy<HttpClient> _apiClient;
+        private static Lazy<HttpClient> _apiClient = null;
 
         private string _authority;
         private string _api;
-        private HttpClientHandler _handler;
+        private HttpClientHandler _handler = null;
 
         public MainPage()
         {
             InitializeComponent();
 
-#if DEBUG
-            ServicePointManager.ServerCertificateValidationCallback += (o, cert, chain, sslPolicyErrors) => true;
-#endif
+            _handler = _handler ?? new System.Net.Http.HttpClientHandler();
+            _apiClient = _apiClient ?? new Lazy<HttpClient>(() => new HttpClient(_handler));
 
-            _handler = new System.Net.Http.HttpClientHandler();
-            _apiClient = new Lazy<HttpClient>(() => new HttpClient(_handler));
-
-            var useLocalIdentityServer = true;
+            var useLocalIdentityServer = false;
             var useSecureLocal = true;
 
             if (useLocalIdentityServer)

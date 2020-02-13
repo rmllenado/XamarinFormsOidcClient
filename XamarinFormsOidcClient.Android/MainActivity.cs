@@ -42,9 +42,9 @@ namespace XamarinFormsOidcClient.Droid
 
             base.OnCreate(bundle);
 
-//#if DEBUG
-//            ServicePointManager.ServerCertificateValidationCallback += (o, cert, chain, sslPolicyErrors) => true;
-//#endif
+#if DEBUG
+            ServicePointManager.ServerCertificateValidationCallback += (o, cert, chain, sslPolicyErrors) => true;
+#endif
 
             global::Xamarin.Forms.Forms.Init(this, bundle);
             LoadApplication(new App());
