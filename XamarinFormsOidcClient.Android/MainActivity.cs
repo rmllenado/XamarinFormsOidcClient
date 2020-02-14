@@ -1,15 +1,9 @@
-﻿using System;
-
+﻿
 using Android.App;
 using Android.Content.PM;
-using Android.Runtime;
-using Android.Views;
-using Android.Widget;
 using Android.OS;
 using Xamarin.Forms;
 using XamarinFormsOidcClient.Core;
-using System.Net;
-using System.Net.Http;
 
 namespace XamarinFormsOidcClient.Droid
 {

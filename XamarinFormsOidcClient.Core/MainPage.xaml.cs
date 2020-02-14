@@ -22,7 +22,10 @@ namespace XamarinFormsOidcClient.Core
     {
         public CustomHttphandler() : base()
         {
-            ServerCertificateCustomValidationCallback = (message, certificate, chain, sslPolicyErrors) => true;
+            ServerCertificateCustomValidationCallback = (message, certificate, chain, sslPolicyErrors) =>
+            {
+                return true;
+            };
         }
     }
 #endif
@@ -31,7 +34,7 @@ namespace XamarinFormsOidcClient.Core
     public partial class MainPage : ContentPage
     {
         OidcClient _client;
-        private static LoginResult _result;
+        private static LoginResult _loginResult;
 
         private static Lazy<HttpClient> _apiClient = null;
         private static HttpClientHandler _handler = null;
@@ -117,10 +120,10 @@ namespace XamarinFormsOidcClient.Core
                         RedirectUri = "xamarinformsclients://callback",
                         Browser = browser,
 
-                        ResponseMode = OidcClientOptions.AuthorizeResponseMode.Redirect,
+                        ResponseMode = OidcClientOptions.AuthorizeResponseMode.Redirect
 
-                        Flow = OidcClientOptions.AuthenticationFlow.Hybrid
-
+                        ,Flow = OidcClientOptions.AuthenticationFlow.Hybrid
+                        ,PostLogoutRedirectUri = "xamarinformsclients://callback"
 #if DEBUG
                     // dev env setup - handle/bypass certificate errors
                     ,
@@ -134,7 +137,7 @@ namespace XamarinFormsOidcClient.Core
 
             StsPicker.SelectedIndex = 1;
 
-            Func<bool> isAuthenticated = () => { return _result != null && _result.User != null && _result.User.Identity != null && _result.User.Identity.IsAuthenticated; };
+            Func<bool> isAuthenticated = () => { return _loginResult != null && _loginResult.User != null && _loginResult.User.Identity != null && _loginResult.User.Identity.IsAuthenticated; };
 
             Login.IsVisible = !(Logout.IsVisible = isAuthenticated());
 
@@ -269,7 +272,7 @@ namespace XamarinFormsOidcClient.Core
             LogoutResult logoutResult = null;
             try
             {
-                logoutResult = await _client.LogoutAsync(new LogoutRequest { IdTokenHint = _result.IdentityToken });
+                logoutResult = await _client.LogoutAsync(new LogoutRequest { IdTokenHint = _loginResult.IdentityToken });
             }
             catch (Exception ex)
             {
@@ -286,7 +289,8 @@ namespace XamarinFormsOidcClient.Core
             Logout.IsVisible = true;
             Login.IsVisible = false;
 
-            _result = null;
+            _loginResult = null;
+            _apiClient.Value.SetBearerToken("");
         }
 
         private async void Login_Clicked(object sender, EventArgs e)
@@ -294,7 +298,7 @@ namespace XamarinFormsOidcClient.Core
             ResetOutput();
             try
             {
-                _result = await _client.LoginAsync(new LoginRequest());
+                _loginResult = await _client.LoginAsync(new LoginRequest());
             }
             catch (Exception ex)
             {
@@ -302,9 +306,9 @@ namespace XamarinFormsOidcClient.Core
                 return;
             }
 
-            if (_result.IsError)
+            if (_loginResult.IsError)
             {
-                DisplayOutput(_result.Error);
+                DisplayOutput(_loginResult.Error);
                 return;
             }
 
@@ -312,13 +316,13 @@ namespace XamarinFormsOidcClient.Core
             Login.IsVisible = false;
 
             var sb = new StringBuilder(128);
-            foreach (var claim in _result.User.Claims)
+            foreach (var claim in _loginResult.User.Claims)
             {
                 sb.AppendFormat("{0}: {1}\n", claim.Type, claim.Value);
             }
 
-            sb.AppendFormat("\n{0}: {1}\n", "refresh token", _result?.RefreshToken ?? "none");
-            sb.AppendFormat("\n{0}: {1}\n", "access token", _result.AccessToken);
+            sb.AppendFormat("\n{0}: {1}\n", "refresh token", _loginResult?.RefreshToken ?? "none");
+            sb.AppendFormat("\n{0}: {1}\n", "access token", _loginResult.AccessToken);
 
             // instance state seems to be not statefull
             // So I'm trying to callback pattern to put the message back
@@ -326,7 +330,7 @@ namespace XamarinFormsOidcClient.Core
 
             _callbackOutput = sb.ToString();
 
-            _apiClient.Value.SetBearerToken(_result?.AccessToken ?? "");
+            _apiClient.Value.SetBearerToken(_loginResult?.AccessToken ?? "");
             _apiClient.Value.BaseAddress = new Uri(_apiBaseAddress);
 
         }
