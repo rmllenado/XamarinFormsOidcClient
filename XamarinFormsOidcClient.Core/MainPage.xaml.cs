@@ -55,6 +55,7 @@ namespace XamarinFormsOidcClient.Core
             ViewOpenIDConfiguration.Clicked += ViewOpenIDConfiguration_Clicked;
             AuthorizeCallApi.Clicked += AuthorizeCallApi_Clicked;
             Login.Clicked += Login_Clicked;
+            Logout.Clicked += Logout_Clicked;
             CallApi.Clicked += CallApi_Clicked;
 
             if (_callbackOutput != null)
@@ -72,7 +73,7 @@ namespace XamarinFormsOidcClient.Core
             // dev env setup - handle/bypass certificate errors
             //DependencyService.Register<CustomHttphandler>();
             //_handler = DependencyService.Resolve<CustomHttphandler>();
-            _handler = new CustomHttphandler();
+            _handler = _handler ?? new CustomHttphandler();
 #endif
 
             StsPicker.SelectedIndexChanged += (sender, args) =>
@@ -132,6 +133,11 @@ namespace XamarinFormsOidcClient.Core
             };
 
             StsPicker.SelectedIndex = 1;
+
+            Func<bool> isAuthenticated = () => { return _result != null && _result.User != null && _result.User.Identity != null && _result.User.Identity.IsAuthenticated; };
+
+            Login.IsVisible = !(Logout.IsVisible = isAuthenticated());
+
         }
 
         private void ResetOutput()
@@ -257,6 +263,32 @@ namespace XamarinFormsOidcClient.Core
             return;
         }
 
+        private async void Logout_Clicked(object sender, EventArgs e)
+        {
+            ResetOutput();
+            LogoutResult logoutResult = null;
+            try
+            {
+                logoutResult = await _client.LogoutAsync(new LogoutRequest { IdTokenHint = _result.IdentityToken });
+            }
+            catch (Exception ex)
+            {
+                DisplayOutput(ex);
+                return;
+            }
+
+            if (logoutResult.IsError)
+            {
+                DisplayOutput(logoutResult.Error);
+                return;
+            }
+
+            Logout.IsVisible = true;
+            Login.IsVisible = false;
+
+            _result = null;
+        }
+
         private async void Login_Clicked(object sender, EventArgs e)
         {
             ResetOutput();
@@ -275,6 +307,9 @@ namespace XamarinFormsOidcClient.Core
                 DisplayOutput(_result.Error);
                 return;
             }
+
+            Logout.IsVisible = true;
+            Login.IsVisible = false;
 
             var sb = new StringBuilder(128);
             foreach (var claim in _result.User.Claims)
