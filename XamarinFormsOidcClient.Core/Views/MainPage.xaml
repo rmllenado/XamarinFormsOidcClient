@@ -1,0 +1,55 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:d="http://xamarin.com/schemas/2014/forms/design"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             xmlns:local="clr-namespace: XamarinFormsOidcClient.Core.ViewModels"
+             x:Class="XamarinFormsOidcClient.Core.MainPage">
+    <ContentPage.BindingContext>
+        <local:MainViewModel />
+    </ContentPage.BindingContext>
+    <ContentPage.Content>
+        <StackLayout>
+            <Label Text="Native OIDC Client"
+                   FontSize="Title"
+                   HorizontalTextAlignment="Center"></Label>
+            <Picker x:Name="StsPicker"
+                    Title="Pick an STS"
+                    HorizontalOptions="CenterAndExpand"
+                    ItemsSource="{Binding StsList}"
+                    ItemDisplayBinding="{Binding Key}"
+                    SelectedItem="{Binding SelectedSts}">
+            </Picker>
+            <Button Text="View Disco"
+                    x:Name="ViewDisco"
+                    Command="{Binding GetDiscoCommand}"/>
+            <Button Text="View OpenID Configuration"
+                    x:Name="ViewOpenIDConfiguration"
+                    Command="{Binding GetOpenIdConfigurationCommand}"/>
+            <Button Text="Call Public Api - Weatherforecast" x:Name="CallApiWeatherforecast" />
+            <Button Text="Authorize and Call Api" x:Name="AuthorizeCallApi" />
+            <Button Text="Login"
+                    x:Name="Login"
+                    IsVisible="{Binding IsUnauthenticated}"
+                    Command="{Binding LoginCommand}"/>
+            <Button Text="Logout"
+                    x:Name="Logout"
+                    IsVisible="{Binding IsAuthenticated}"
+                    Command="{Binding LogoutCommand}"/>
+            <Button Text="Call Api"
+                    x:Name="CallApi"
+                    IsVisible="{Binding IsAuthenticated}"
+                    Command="{Binding CallApiCommand}"/>
+            <Label Text="Output"
+                   FontSize="Title"
+                   HorizontalTextAlignment="Center"></Label>
+            <ScrollView Orientation="Vertical">
+                <Label x:Name="OutputText"
+                    VerticalOptions="FillAndExpand" 
+                    HorizontalOptions="FillAndExpand"
+                    Text="{Binding Output}"/>
+            </ScrollView>
+        </StackLayout>
+    </ContentPage.Content>
+</ContentPage>

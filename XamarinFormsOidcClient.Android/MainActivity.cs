@@ -46,5 +46,25 @@ namespace XamarinFormsOidcClient.Droid
             global::Xamarin.Forms.Forms.Init(this, bundle);
             LoadApplication(new App());
         }
+
+        protected override void OnStop()
+        {
+            base.OnStop();
+        }
+
+        protected override void OnStart()
+        {
+            base.OnStart();
+        }
+
+        protected override void OnPause()
+        {
+            base.OnPause();
+        }
+
+        protected override void OnRestart()
+        {
+            base.OnRestart();
+        }
     }
 }
